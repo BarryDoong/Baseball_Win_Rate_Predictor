@@ -1,6 +1,7 @@
 # Baseball Win Rate Predictor
 
-This project implements a neural network model to **predict MLB team win rate** using structured batting and pitching statistic.
+This project implements a neural network model to **predict MLB team win rate** using structured batting and pitching statistic.  
+This project is created for my own amusement, hence some place may be lack of details
 
 ## Implementation Steps
 This project consists of three steps:   
