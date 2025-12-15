@@ -41,3 +41,21 @@ This project consists of three steps:
   - Concatenate batter + pitcher embeddings
   - Fully connected head
   - **Sigmoid output** -> predicted win rate
+
+### Sample Port ###
+- Input
+  - At fetching data stage, webwarm will automatically save all the input data in ./mlb_stats_full. One can adjust input by changing the content in the folder.
+
+- Output
+  - Learning Curve:  
+    Will be automatically saved as loss_curve.png
+  - prediction vs ground truth:  
+    Will be automatically saved as pred_vs_gt_annotated.png
+
+### Potential Extension ###
+- I want to use this model to evaluate player's value at the market. By changing the player in the input data, One can observe the potential win_rate difference.
+- This project is a practice for implementing **Neural Network**. My ultimate goal is to construct a baseball manager model to help the manager with on-court decision. 
+
+### Author ###
+- Doong, Shao-Jyun
+    
