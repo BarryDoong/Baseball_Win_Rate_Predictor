@@ -6,25 +6,25 @@ This project is created for my own amusement, hence some place may be lack of de
 ## Implementation Steps
 This project consists of three steps:   
 - Fetching data from MLB website
-  - webwarm_4_player.py
-  - webwarm_4_team.py
+  - `webwarm_4_player.py`
+  - `webwarm_4_team.py`
 - Implement the model
-  - model.py
+  - `model.py`
 
 ## Implementation Details
 
 ### Fetching Data ###
-- webwarm_4_player.py
+- `webwarm_4_player.py`
   - This file fetchs the top 9 batters (ordered by AB) and top 10 pitchers (ordered by IP) for each (team, year) combaination
 
 
-- webwarm_4_team.py
+- `webwarm_4_team.py`
   - This file fetchs the win rate for each (team, year) combaination
 
 
 ### Model Architecture ###
 - Batter Side
-  - I applied a **circular sliding windows of size 4** since the batter can be batted to score by as far as the third batter behind him
+  - A **circular sliding windows of size 4** is applied since the batter can be batted to score by as far as the third batter behind him
   - Each windows is passed through a shared **MLP encoder**
   - Window embeddings are **mean-aggregated** into a pitcher representation
  
@@ -41,6 +41,7 @@ This project consists of three steps:
   - Concatenate batter + pitcher embeddings
   - Fully connected head
   - **Sigmoid output** -> predicted win rate
+  - loss function is customized to have a better performance at [0.4, 0.7]. 
 
 ### Sample Port ###
 - Input
@@ -48,9 +49,12 @@ This project consists of three steps:
 
 - Output
   - Learning Curve:  
-    Will be automatically saved as loss_curve.png
+    Automatically saved as `loss_curve.png`.
+    ![Learning Curve](loss_curve.png)
   - prediction vs ground truth:  
-    Will be automatically saved as pred_vs_gt_annotated.png
+    Automatically saved as `pred_vs_gt_annotated.png`.  
+    The figure visualizes prediction accuracy by showing interval bands around the ideal *y = x* line, making it easier to assess model performance.
+    ![Pred vs Ground Truth](pred_vs_gt_annotated.png)
 
 ### Potential Extension ###
 - I want to use this model to evaluate player's value at the market. By changing the player in the input data, One can observe the potential win_rate difference.
