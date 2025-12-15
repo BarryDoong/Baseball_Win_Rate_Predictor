@@ -27,7 +27,8 @@ EPOCHS = 150
 BATCH_SIZE = 32
 LR = 1e-4
 
-LOSS_GAMMA = 5.0
+LOSS_GAMMA1 = 5.0
+LOSS_GAMMA2 = 3.0
 
 
 # ----------------------------
@@ -186,7 +187,7 @@ class MLBWinRateDataset(Dataset):
 # Model
 # ----------------------------
 class MLP(nn.Module):
-    def __init__(self, in_dim, hidden_dims, out_dim, dropout=0.2):
+    def __init__(self, in_dim, hidden_dims, out_dim, dropout=0.25):
         super().__init__()
         layers = []
         d = in_dim
@@ -206,9 +207,9 @@ class WinRateNet(nn.Module):
     def __init__(self, hitter_feat_dim, pitcher_feat_dim, emb_dim=32):
         super().__init__()
         # Batter window MLP: (4 * Hf) -> emb_dim
-        self.batter_win = MLP(in_dim=4 * hitter_feat_dim, hidden_dims=[128, 64], out_dim=emb_dim, dropout=0.1)
+        self.batter_win = MLP(in_dim=4 * hitter_feat_dim, hidden_dims=[128, 64], out_dim=emb_dim, dropout=0.15)
         # Pitcher window MLP: (6 * Pf) -> emb_dim
-        self.pitcher_win = MLP(in_dim=6 * pitcher_feat_dim, hidden_dims=[128, 64], out_dim=emb_dim, dropout=0.1)
+        self.pitcher_win = MLP(in_dim=6 * pitcher_feat_dim, hidden_dims=[128, 64], out_dim=emb_dim, dropout=0.15)
 
         # Final head: concat -> ... -> ReLU -> pred_win_rate
         self.head = nn.Sequential(
@@ -269,7 +270,7 @@ def plot_pred_vs_gt_annotated(
     dataloader,
     save_path="pred_vs_gt_annotated.png",
     device=DEVICE,
-    coverage=0.8,              # 80% accuracy interval
+    coverage=0.95,              # 95% accuracy interval
     extra_thresholds=(0.01, 0.02, 0.05, 0.10),
 ):
     model.eval()
@@ -379,9 +380,11 @@ def main(epochs=10, batch_size=5, lr=1e-3, patience=20):
     def loss_func(pred, y):
         
         error = (pred -y).pow(2)
+       
         mask = ((y>=0.4) & (y<= 0.7)).float()
-        
-        weight = 1.0 + LOSS_GAMMA * mask
+        mask2 = (error > 0.025).float()
+
+        weight = 1.0 + LOSS_GAMMA1 * mask + LOSS_GAMMA2 * mask2
 
         loss = (weight * error).mean()
         
