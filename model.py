@@ -22,6 +22,13 @@ N_PITCHERS = 10
 
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
+PATIENCE = 20
+EPOCHS = 150
+BATCH_SIZE = 32
+LR = 1e-4
+
+LOSS_GAMMA = 5.0
+
 
 # ----------------------------
 # Window builders
@@ -179,7 +186,7 @@ class MLBWinRateDataset(Dataset):
 # Model
 # ----------------------------
 class MLP(nn.Module):
-    def __init__(self, in_dim, hidden_dims, out_dim, dropout=0.3):
+    def __init__(self, in_dim, hidden_dims, out_dim, dropout=0.2):
         super().__init__()
         layers = []
         d = in_dim
@@ -196,18 +203,18 @@ class MLP(nn.Module):
 
 
 class WinRateNet(nn.Module):
-    def __init__(self, hitter_feat_dim, pitcher_feat_dim, emb_dim=64):
+    def __init__(self, hitter_feat_dim, pitcher_feat_dim, emb_dim=32):
         super().__init__()
         # Batter window MLP: (4 * Hf) -> emb_dim
-        self.batter_win = MLP(in_dim=4 * hitter_feat_dim, hidden_dims=[128, 128], out_dim=emb_dim, dropout=0.2)
+        self.batter_win = MLP(in_dim=4 * hitter_feat_dim, hidden_dims=[128, 64], out_dim=emb_dim, dropout=0.1)
         # Pitcher window MLP: (6 * Pf) -> emb_dim
-        self.pitcher_win = MLP(in_dim=6 * pitcher_feat_dim, hidden_dims=[128, 128], out_dim=emb_dim, dropout=0.2)
+        self.pitcher_win = MLP(in_dim=6 * pitcher_feat_dim, hidden_dims=[128, 64], out_dim=emb_dim, dropout=0.1)
 
         # Final head: concat -> ... -> ReLU -> pred_win_rate
         self.head = nn.Sequential(
-            nn.Linear(2 * emb_dim, 64),
+            nn.Linear(2 * emb_dim, 32),
             nn.ReLU(),
-            nn.Linear(64, 1),
+            nn.Linear(32, 1),
             nn.Sigmoid(),  # enforce non-negative prediction as you requested
         )
 
@@ -257,10 +264,17 @@ def plot_loss_curve(train_losses, val_losses, save_path="loss_curve.png"):
     plt.savefig(save_path, dpi=200)
     plt.close()
 
-def plot_pred_vs_gt_annotated(model, dataloader, save_path="pred_vs_gt_annotated.png", device=DEVICE):
+def plot_pred_vs_gt_annotated(
+    model,
+    dataloader,
+    save_path="pred_vs_gt_annotated.png",
+    device=DEVICE,
+    coverage=0.8,              # 80% accuracy interval
+    extra_thresholds=(0.01, 0.02, 0.05, 0.10),
+):
     model.eval()
 
-    all_pred, all_gt, all_labels = [], [], []
+    all_pred, all_gt = [], []
 
     with torch.no_grad():
         for hitters, pitchers, y, years, teams in dataloader:
@@ -272,42 +286,76 @@ def plot_pred_vs_gt_annotated(model, dataloader, save_path="pred_vs_gt_annotated
 
             all_pred.append(pred.detach().cpu().numpy())
             all_gt.append(y.detach().cpu().numpy())
-            all_labels += [f"{yr}-{tm}" for yr, tm in zip(years, teams)]
 
-    x = np.concatenate(all_pred, axis=0)  # pred
-    y = np.concatenate(all_gt, axis=0)    # gt
+    # Flatten
+    x = np.concatenate(all_pred, axis=0).reshape(-1)  # pred
+    y = np.concatenate(all_gt, axis=0).reshape(-1)    # gt
 
-    # Determine plotting range for y=x
+    # Absolute error
+    abs_err = np.abs(x - y)
+
+    # Coverage-based error radius
+    X = float(np.quantile(abs_err, coverage))
+
+    # Metrics
+    mae = abs_err.mean()
+    rmse = np.sqrt(np.mean((x - y) ** 2))
+
+    fixed = {t: float(np.mean(abs_err <= t)) for t in extra_thresholds}
+
+    # Plot range
     mn = float(min(x.min(), y.min()))
     mx = float(max(x.max(), y.max()))
     pad = 0.02 * (mx - mn + 1e-9)
     lo, hi = mn - pad, mx + pad
 
-    plt.figure()
-    plt.scatter(x, y, s=30, color='red')
-    plt.plot([lo, hi], [lo, hi])  # y = x reference
+    plt.figure(figsize=(7, 7))
+    plt.scatter(x, y, s=30, alpha=0.8)
 
-    # # Annotate each point
-    # for xi, yi, label in zip(x, y, all_labels):
-    #     plt.annotate(
-    #         label,
-    #         (xi, yi),
-    #         textcoords="offset points",
-    #         xytext=(4, 4),
-    #         fontsize=8,
-    #     )
+    # y = x
+    plt.plot([lo, hi], [lo, hi], linewidth=1)
+
+    # ±X band around y=x
+    plt.plot([lo, hi], [lo + X, hi + X], linestyle="--", linewidth=1)
+    plt.plot([lo, hi], [lo - X, hi - X], linestyle="--", linewidth=1)
+
+    # Explicit ±X reference lines
+    plt.axhline(+X, linestyle=":", linewidth=1)
+    plt.axhline(-X, linestyle=":", linewidth=1)
+    plt.axvline(+X, linestyle=":", linewidth=1)
+    plt.axvline(-X, linestyle=":", linewidth=1)
+
+    # Text box
+    lines = [
+        f"{int(coverage * 100)}% within ±{X:.4f}",
+        f"MAE: {mae:.4f}",
+        f"RMSE: {rmse:.4f}",
+    ]
+    for t, v in fixed.items():
+        lines.append(f"within ±{t:.2f}: {v*100:.1f}%")
+
+    plt.gca().text(
+        0.02, 0.98,
+        "\n".join(lines),
+        transform=plt.gca().transAxes,
+        va="top",
+        ha="left",
+        bbox=dict(boxstyle="round", alpha=0.15, pad=0.4)
+    )
 
     plt.xlim(lo, hi)
     plt.ylim(lo, hi)
     plt.xlabel("pred_win_rate (x)")
     plt.ylabel("ground_truth (y)")
-    plt.title("Pred vs Ground Truth")
+    plt.title("Pred vs Ground Truth with Accuracy Interval")
 
     plt.tight_layout()
     plt.savefig(save_path, dpi=250)
     plt.close()
 
     print(f"Saved: {save_path}")
+    print(f"{int(coverage * 100)}% of predictions are within ±{X:.6f} win_rate")
+
 
 
 def main(epochs=10, batch_size=5, lr=1e-3, patience=20):
@@ -327,6 +375,17 @@ def main(epochs=10, batch_size=5, lr=1e-3, patience=20):
         p_list.append(p)
     scaler = Standardizer()
     scaler.fit(h_list, p_list)
+
+    def loss_func(pred, y):
+        
+        error = (pred -y).pow(2)
+        mask = ((y>=0.4) & (y<= 0.7)).float()
+        
+        weight = 1.0 + LOSS_GAMMA * mask
+
+        loss = (weight * error).mean()
+        
+        return loss
 
     def collate(batch):
         hitters, pitchers, ys, years, teams = [], [], [], [], []
@@ -349,7 +408,6 @@ def main(epochs=10, batch_size=5, lr=1e-3, patience=20):
 
     model = WinRateNet(len(HITTER_FEATS), len(PITCHER_FEATS), emb_dim=64).to(DEVICE)
     opt = torch.optim.Adam(model.parameters(), lr=lr)
-    loss_fn = nn.MSELoss()
 
     train_losses, val_losses = [], []
     best_val = float("inf")
@@ -361,7 +419,7 @@ def main(epochs=10, batch_size=5, lr=1e-3, patience=20):
         for hitters, pitchers, y, *_ in tqdm(train_loader, desc=f"Epoch {ep}/{epochs} [train]"):
             hitters, pitchers, y = hitters.to(DEVICE), pitchers.to(DEVICE), y.to(DEVICE)
             pred = model(hitters, pitchers)
-            loss = loss_fn(pred, y)
+            loss = loss_func(pred, y)
 
             opt.zero_grad()
             loss.backward()
@@ -378,7 +436,7 @@ def main(epochs=10, batch_size=5, lr=1e-3, patience=20):
             for hitters, pitchers, y, *_ in tqdm(val_loader, desc=f"Epoch {ep}/{epochs} [val]  "):
                 hitters, pitchers, y = hitters.to(DEVICE), pitchers.to(DEVICE), y.to(DEVICE)
                 pred = model(hitters, pitchers)
-                loss = loss_fn(pred, y)
+                loss = loss_func(pred, y)
                 va_sum += loss.item() * y.size(0)
 
         va_loss = va_sum / max(1, len(val_ds))
@@ -410,7 +468,7 @@ def main(epochs=10, batch_size=5, lr=1e-3, patience=20):
 
 
 if __name__ == "__main__":
-    main(epochs=150, batch_size=32, lr=1e-4)
+    main(epochs=EPOCHS, batch_size=BATCH_SIZE, lr=LR, patience=PATIENCE)
 
 
 
