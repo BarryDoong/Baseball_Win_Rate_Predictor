@@ -36,12 +36,16 @@ This project consists of three steps:
     - `{5, 6, 7, 8, 9, 10}`
   - Each window is passed through a shared **MLP encoder**
   - Window embeddings are **mean-aggregated** into a pitcher representation
+ 
+- Loss Function
+  - A customized loss function is applied.
+  - The loss is increased when the ground-truth win rate lies within `[0.4, 0.7]`.
+  - The loss is further penalized when the prediction error exceeds `0.05`.
 
 - Final Prediction
   - Concatenate batter + pitcher embeddings
   - Fully connected head
-  - **Sigmoid output** -> predicted win rate
-  - loss function is customized to have a better performance at [0.4, 0.7]. 
+  - **Sigmoid output** -> predicted win rate 
 
 ### Sample Port ###
 - Input
