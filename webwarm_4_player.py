@@ -4,9 +4,9 @@ import os
 from tqdm import tqdm
 
 # --- Config ---
-START_YEAR = 2016
+START_YEAR = 2000
 END_YEAR = 2025
-MAX_PLAYERS = 2000
+MAX_PLAYERS = 5000
 API_URL = "https://bdfed.stitch.mlbinfra.com/bdfed/stats/player"
 
 # --- Fetch API Data ---

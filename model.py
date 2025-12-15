@@ -199,9 +199,9 @@ class WinRateNet(nn.Module):
     def __init__(self, hitter_feat_dim, pitcher_feat_dim, emb_dim=64):
         super().__init__()
         # Batter window MLP: (4 * Hf) -> emb_dim
-        self.batter_win = MLP(in_dim=4 * hitter_feat_dim, hidden_dims=[128, 128], out_dim=emb_dim, dropout=0.1)
+        self.batter_win = MLP(in_dim=4 * hitter_feat_dim, hidden_dims=[128, 128], out_dim=emb_dim, dropout=0.2)
         # Pitcher window MLP: (6 * Pf) -> emb_dim
-        self.pitcher_win = MLP(in_dim=6 * pitcher_feat_dim, hidden_dims=[128, 128], out_dim=emb_dim, dropout=0.1)
+        self.pitcher_win = MLP(in_dim=6 * pitcher_feat_dim, hidden_dims=[128, 128], out_dim=emb_dim, dropout=0.2)
 
         # Final head: concat -> ... -> ReLU -> pred_win_rate
         self.head = nn.Sequential(
@@ -237,7 +237,7 @@ class WinRateNet(nn.Module):
 # ----------------------------
 # Train / Eval
 # ----------------------------
-def split_train_val(n, val_ratio=0.2, seed=42):
+def split_train_val(n, val_ratio=0.3, seed=42):
     idx = np.arange(n)
     rng = np.random.default_rng(seed)
     rng.shuffle(idx)
@@ -310,12 +310,14 @@ def plot_pred_vs_gt_annotated(model, dataloader, save_path="pred_vs_gt_annotated
     print(f"Saved: {save_path}")
 
 
-def main(epochs=10, batch_size=5, lr=1e-3):
+def main(epochs=10, batch_size=5, lr=1e-3, patience=20):
     ds = MLBWinRateDataset(BASE_DIR)
     train_idx, val_idx = split_train_val(len(ds), val_ratio=0.2)
 
     train_ds = torch.utils.data.Subset(ds, train_idx)
     val_ds = torch.utils.data.Subset(ds, val_idx)
+
+    patience_counter = 1
 
     # Fit standardizer on train set only
     h_list, p_list = [], []
@@ -383,8 +385,14 @@ def main(epochs=10, batch_size=5, lr=1e-3):
         val_losses.append(va_loss)
 
         if va_loss < best_val:
+            patience_counter = 1
             best_val = va_loss
             torch.save(model.state_dict(), "best_winrate_model.pt")
+        else:
+            patience_counter += 1
+            if patience_counter > patience:
+                print(f"Early stopping at epoch {ep} (patience {patience} exceeded)")
+                break
 
         print(f"Epoch {ep}: train_mse={tr_loss:.6f}  val_mse={va_loss:.6f}  best_val={best_val:.6f}")
 
@@ -402,7 +410,7 @@ def main(epochs=10, batch_size=5, lr=1e-3):
 
 
 if __name__ == "__main__":
-    main(epochs=100, batch_size=16, lr=1e-4)
+    main(epochs=150, batch_size=32, lr=1e-4)
 
 
 

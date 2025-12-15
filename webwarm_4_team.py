@@ -4,7 +4,7 @@ import os
 from tqdm import tqdm
 
 # ---------- CONFIG ----------
-START_YEAR = 2016
+START_YEAR = 2000
 END_YEAR = 2025
 SAVE_DIR = "mlb_stats_full"
 OUTPUT_FILE = f"{SAVE_DIR}/team_win_loss.csv"
