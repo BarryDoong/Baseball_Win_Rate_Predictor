@@ -4,7 +4,7 @@ This project implements a neural network model to **predict MLB team win rate** 
 This project is created for my own amusement, hence some place may be lack of details
 
 ## Implementation Steps
-This project consists of three steps:   
+This project consists of two steps:   
 - Fetching data from MLB website
   - `webwarm_4_player.py`
   - `webwarm_4_team.py`
