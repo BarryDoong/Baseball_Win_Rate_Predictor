@@ -102,7 +102,7 @@ def main(epochs=10, batch_size=5, lr=1e-3, patience=20):
         if va_loss < best_val:
             patience_counter = 1
             best_val = va_loss
-            torch.save(model.state_dict(), "best_winrate_model.pt")
+            torch.save(model.state_dict(), "./output/best_winrate_model.pt")
         else:
             patience_counter += 1
             if patience_counter > patience:
@@ -112,15 +112,15 @@ def main(epochs=10, batch_size=5, lr=1e-3, patience=20):
         print(f"Epoch {ep}: train_mse={tr_loss:.6f}  val_mse={va_loss:.6f}  best_val={best_val:.6f}")
 
     # plot + save
-    plot_loss_curve(train_losses, val_losses, save_path="loss_curve.png")
+    plot_loss_curve(train_losses, val_losses, save_path="./output/loss_curve.png")
     print("Saved: best_winrate_model.pt")
     print("Saved: loss_curve.png")
 
     # ---- load best model
-    model.load_state_dict(torch.load("best_winrate_model.pt", map_location=DEVICE))
+    model.load_state_dict(torch.load("./output/best_winrate_model.pt", map_location=DEVICE))
 
     # ---- print predictions on validation set
-    plot_pred_vs_gt_annotated(model, val_loader, save_path="pred_vs_gt_annotated.png")
+    plot_pred_vs_gt_annotated(model, val_loader, save_path="./output/pred_vs_gt_annotated.png")
 
 
 
