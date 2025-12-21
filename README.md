@@ -9,14 +9,13 @@ This project consists of two steps:
   - `webwarm_4_player.py`
   - `webwarm_4_team.py`
 - Implement the model
-  - `model.py`
+  - `main.py`
 
 ## Implementation Details
 
 ### Fetching Data ###
 - `webwarm_4_player.py`
   - This file fetchs the top 9 batters (ordered by AB) and top 10 pitchers (ordered by IP) for each (team, year) combaination
-
 
 - `webwarm_4_team.py`
   - This file fetchs the win rate for each (team, year) combaination
