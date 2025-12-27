@@ -53,11 +53,11 @@ This project consists of two steps:
 - Output
   - Learning Curve:  
     Automatically saved as `loss_curve.png`.
-    ![Learning Curve](loss_curve.png)
+    ![Learning Curve](./output/loss_curve.png)
   - prediction vs ground truth:  
     Automatically saved as `pred_vs_gt_annotated.png`.  
     The figure visualizes prediction accuracy by showing interval bands around the ideal *y = x* line, making it easier to assess model performance.
-    ![Pred vs Ground Truth](pred_vs_gt_annotated.png)
+    ![Pred vs Ground Truth](./output/pred_vs_gt_annotated.png)
 
 ### Potential Extension ###
 - I want to use this model to evaluate player's value at the market. By changing the player in the input data, One can observe the potential win_rate difference.
