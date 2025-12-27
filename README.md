@@ -53,11 +53,17 @@ This project consists of two steps:
 - Output
   - Learning Curve:  
     Automatically saved as `loss_curve.png`.
-    ![Learning Curve](./output/loss_curve.png)
+    ![Learning Curve](./output/loss_curve_window.png)
   - prediction vs ground truth:  
     Automatically saved as `pred_vs_gt_annotated.png`.  
     The figure visualizes prediction accuracy by showing interval bands around the ideal *y = x* line, making it easier to assess model performance.
-    ![Pred vs Ground Truth](./output/pred_vs_gt_annotated.png)
+    ![Pred vs Ground Truth](./output/pred_vs_gt_annotated_window.png)
+
+### Some Observation ###
+- I also construct a model without sliding windows, by comparing performances of models, I found out that sliding windows did not boost the performance (One can go to see the figures in `./output` where the performances of model with windows are labelled 'window' in names).
+- The possible explanations could be:
+  - The sliding windows approach is based on the assumptions that the batters lineup and pitcher roles follow a consistent workload pattern (AB and IP in each cases). However, this is not guaranteed. For example, a team may employ a four-man rotation or rely heavily on an ALL-Star reliever with a disproportionately large workload, breaking the assumed local structure.
+  - Sliding windows increases dimensionality which can lead to overfitting (In fact, one can indeed observe this in the figures) 
 
 ### Potential Extension ###
 - I want to use this model to evaluate player's value at the market. By changing the player in the input data, One can observe the potential win_rate difference.
