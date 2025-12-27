@@ -52,8 +52,7 @@ class MLP(nn.Module):
 
     def forward(self, x):
         return self.net(x)
-
-
+    
 class WinRateNet(nn.Module):
     def __init__(self, hitter_feat_dim, pitcher_feat_dim, emb_dim=32):
         super().__init__()
@@ -86,6 +85,43 @@ class WinRateNet(nn.Module):
         # Pitcher: (B, 5, 6, Pf) -> (B, 5, 6*Pf) -> (B, 5, emb) -> mean -> (B, emb)
         p_windows = torch.stack([pitcher_windows_top10(pitchers[b]) for b in range(B)], dim=0)
         p_flat = p_windows.reshape(B, 5, 6 * Pf)
+        p_emb = self.pitcher_win(p_flat).mean(dim=1)
+
+        x = torch.cat([b_emb, p_emb], dim=-1)
+        yhat = self.head(x).squeeze(-1)
+        return yhat
+
+
+class WinRateNet_without_Window(nn.Module):
+    def __init__(self, hitter_feat_dim, pitcher_feat_dim, emb_dim=32):
+        super().__init__()
+        # Batter window MLP: (4 * Hf) -> emb_dim
+        self.batter_win = MLP(in_dim=hitter_feat_dim, hidden_dims=[128, 64], out_dim=emb_dim, dropout=0.15)
+        # Pitcher window MLP: (Pf) -> emb_dim
+        self.pitcher_win = MLP(in_dim=pitcher_feat_dim, hidden_dims=[128, 64], out_dim=emb_dim, dropout=0.15)
+
+        # Final head: concat -> ... -> ReLU -> pred_win_rate
+        self.head = nn.Sequential(
+            nn.Linear(2 * emb_dim, 32),
+            nn.ReLU(),
+            nn.Linear(32, 1),
+            nn.Sigmoid(),  # enforce non-negative prediction as you requested
+        )
+
+    def forward(self, hitters, pitchers):
+        """
+        hitters:  (B, 9, Hf)
+        pitchers: (B, 10, Pf)
+        """
+        B, _, Hf = hitters.shape
+        _, _, Pf = pitchers.shape
+
+        # Batter: (B, 9, 4, Hf) -> (B, 9, emb) -> mean -> (B, emb)
+        b_flat = hitters
+        b_emb = self.batter_win(b_flat).mean(dim=1)
+
+        # Pitcher: (B, 5, 6, Pf) -> (B, 5, emb) -> mean -> (B, emb)
+        p_flat = pitchers
         p_emb = self.pitcher_win(p_flat).mean(dim=1)
 
         x = torch.cat([b_emb, p_emb], dim=-1)
