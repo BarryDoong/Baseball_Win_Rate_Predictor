@@ -2,6 +2,7 @@ import requests
 import pandas as pd
 import os
 from tqdm import tqdm
+from config import N_BATTERS, N_PITCHERS
 
 # --- Config ---
 START_YEAR = 2000
@@ -48,17 +49,17 @@ for year in tqdm(range(START_YEAR, END_YEAR + 1), desc="📅 Processing seasons"
         all_teams = set(hit_df["teamAbbrev"].unique()) | set(pitch_df["teamAbbrev"].unique())
 
         for team in all_teams:
-            # --- Top 9 Hitters ---
+            # --- Top Hitters ---
             team_hit = hit_df[hit_df["teamAbbrev"] == team]
-            top_hit = team_hit.sort_values(by="atBats", ascending=False).head(9)[[
+            top_hit = team_hit.sort_values(by="atBats", ascending=False).head(N_BATTERS)[[
                 "playerFullName", "teamAbbrev", "atBats", "avg", "obp", "slg", "ops"
             ]].rename(columns={
                 "avg": "AVG", "obp": "OBP", "slg": "SLG", "ops": "OPS"
             })
 
-            # --- Top 9 Pitchers ---
+            # --- Top Pitchers ---
             team_pitch = pitch_df[pitch_df["teamAbbrev"] == team]
-            top_pitch = team_pitch.sort_values(by="strikeOuts", ascending=False).head(10)[[
+            top_pitch = team_pitch.sort_values(by="strikeOuts", ascending=False).head(N_PITCHERS)[[
                 "playerFullName", "teamAbbrev", "inningsPitched", "era", "whip", "strikeOuts", "wins"
             ]].rename(columns={
                 "inningsPitched": "IP", "era": "ERA", "whip": "WHIP",

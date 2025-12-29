@@ -9,7 +9,7 @@ from torch.utils.data import Dataset, DataLoader
 from visualization import plot_loss_curve, plot_pred_vs_gt_annotated
 from pathlib import Path
 from data_preprocess import MLBWinRateDataset, Standardizer, split_train_val
-from model import WinRateNet
+from model import WinRateNet, WinRateNet_without_Window
 from config import BASE_DIR, HITTER_FEATS, PITCHER_FEATS, DEVICE, EPOCHS, BATCH_SIZE, LR, PATIENCE, LOSS_GAMMA1, LOSS_GAMMA2
 
 
@@ -63,7 +63,7 @@ def main(epochs=10, batch_size=5, lr=1e-3, patience=20):
     train_loader = DataLoader(train_ds, batch_size=batch_size, shuffle=True, collate_fn=collate)
     val_loader = DataLoader(val_ds, batch_size=batch_size, shuffle=False, collate_fn=collate)
 
-    model = WinRateNet(len(HITTER_FEATS), len(PITCHER_FEATS), emb_dim=64).to(DEVICE)
+    model = WinRateNet_without_Window(len(HITTER_FEATS), len(PITCHER_FEATS), emb_dim=64).to(DEVICE)
     opt = torch.optim.Adam(model.parameters(), lr=lr)
 
     train_losses, val_losses = [], []
