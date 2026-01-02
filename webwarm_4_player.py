@@ -2,11 +2,9 @@ import requests
 import pandas as pd
 import os
 from tqdm import tqdm
-from config import N_BATTERS, N_PITCHERS
+from config import N_BATTERS, N_PITCHERS, START_YEAR, END_YEAR
 
 # --- Config ---
-START_YEAR = 2000
-END_YEAR = 2025
 MAX_PLAYERS = 5000
 API_URL = "https://bdfed.stitch.mlbinfra.com/bdfed/stats/player"
 
