@@ -64,7 +64,7 @@ This project consists of two steps:
 - The possible explanations could be:
   - The sliding windows approach is based on the assumptions that the batters lineup and pitcher roles follow a consistent workload pattern (AB and IP in each cases). However, this is not guaranteed. For example, a team may employ a four-man rotation or rely heavily on an ALL-Star reliever with a disproportionately large workload, breaking the assumed local structure.
   - Sliding windows increases dimensionality which can lead to overfitting (In fact, one can indeed observe this in the loss curve figures)
-  -  I also tried to add more hitters since most of the teams use pinch hitters or even platoon players. However, the performance gap is insignificant. 
+-  I also tried to add more hitters since most of the teams use pinch hitters or even platoon players. However, the performance gap is insignificant. 
 
 ### Potential Extension ###
 - I want to use this model to evaluate player's value at the market. By changing the player in the input data, One can observe the potential win_rate difference.
